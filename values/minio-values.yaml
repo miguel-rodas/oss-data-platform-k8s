@@ -1,0 +1,31 @@
+mode: standalone  # OK for local, use distributed mode in HA environments
+
+rootUser: minioadmin
+rootPassword: minioadmin123
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "1Gi"
+    cpu: "1"
+
+service:
+  type: NodePort
+  nodePort: 30000
+
+persistence:
+  enabled: false  # Good for local dev. Enable + set PVC config for production
+
+console:
+  enabled: true
+  consolePort: 9001
+  service:
+    type: NodePort
+    nodePort: 30001
+
+# Expose internal DNS and S3 path-style for clients like Trino
+environment:
+  MINIO_BROWSER_REDIRECT_URL: http://localhost:30001
+  MINIO_DOMAIN: ""  # Force path-style (http://host:port/bucket) for compatibility

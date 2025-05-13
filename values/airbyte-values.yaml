@@ -1,0 +1,18 @@
+ingress:
+  enabled: false
+
+service:
+  type: NodePort
+  port: 8080
+  nodePort: 30002  # Airbyte UI will be at http://localhost:30002
+
+# Reduce resources for local Kind cluster
+resources:
+  server:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+  worker:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
