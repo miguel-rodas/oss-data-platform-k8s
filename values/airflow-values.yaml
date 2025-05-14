@@ -1,0 +1,64 @@
+executor: "CeleryExecutor"
+
+airflowVersion: "3.0.0"
+defaultAirflowRepository: apache/airflow
+defaultAirflowTag: "3.0.0"
+
+fernetKey: "cHJhV1M1ZjBXVXEwVVVrdXpJeUw1cnVBMjhvdlhYaDU="
+webserverSecretKey: "acFiyoZwRn40Gilh3kwkjGiJB4qHbBLtIZQ8tcJP9uPfEV5VSVWZi3SMT-SNkXBDKCIQoRKplClAMgH2Q0xwRg"
+
+config:
+  api_auth:
+    jwt_secret: "x3OJ39d6PxkAlra+zkVDmpgBPxOc0sR1TG2Fw+k3M+E="
+
+webserver:
+  enabled: true
+  defaultUser:
+    enabled: true
+    username: admin
+    password: admin
+    email: admin@example.com
+    firstName: Admin
+    lastName: User
+
+scheduler:
+  enabled: true
+
+triggerer:
+  enabled: true
+
+workers:
+  replicas: 1
+
+createUserJob:
+  applyCustomEnv: true
+
+migrateDatabaseJob:
+  enabled: true
+  applyCustomEnv: true
+
+redis:
+  enabled: true
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: postgres
+
+dags:
+  gitSync:
+    enabled: true
+    repo: https://github.com/miguel-rodas/oss-airflow.git
+    branch: main
+    subPath: dags
+    depth: 1
+    wait: 60
+
+apiServer:
+  replicas: 1
+  service:
+    type: NodePort
+    ports:
+      - name: api-server
+        port: 8080
+        nodePort: 30004
