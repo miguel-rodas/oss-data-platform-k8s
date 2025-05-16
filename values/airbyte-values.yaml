@@ -16,3 +16,40 @@ resources:
     requests:
       cpu: "200m"
       memory: "512Mi"
+
+# Configure Airbyte to store logs in MinIO
+logs:
+  persistence: true
+  s3:
+    enabled: true
+    bucket: airbyte-logs
+    endpoint: http://minio.minio.svc.cluster.local:9000
+    accessKey: minioadmin
+    secretKey: minioadmin123
+    pathStyleAccessEnabled: true
+  logConnectorToStdout: true
+
+workspace:
+  volume:
+    size: 5Gi
+    storageClass: local-path
+
+postgresql:
+  enabled: false
+
+global:
+  database:
+    user: postgres
+    password: postgrespw
+    host: postgres-postgresql.data.svc.cluster.local
+    port: 5432
+    database: airbyte_db
+
+# Configure Airbyte to use external PostgreSQL database
+externalDatabase:
+  enabled: true
+  host: postgres-postgresql.data.svc.cluster.local
+  port: 5432
+  database: airbyte_db
+  username: postgres
+  password: postgrespw

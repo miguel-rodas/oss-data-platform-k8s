@@ -3,15 +3,19 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane
     extraPortMappings:
-      - containerPort: 30000
+      - containerPort: 30000  # MinIO S3 API
         hostPort: 30000
-      - containerPort: 30001
+      - containerPort: 30001  # MinIO Console
         hostPort: 30001
-      - containerPort: 30002
+      - containerPort: 30002  # Airbyte Web UI
         hostPort: 30002
-      - containerPort: 30003
+      - containerPort: 30003  # Airflow Web UI 
         hostPort: 30003
-      - containerPort: 30004
+      - containerPort: 30004  # StarRocks FE NodePort
         hostPort: 30004
-      - containerPort: 30005
+      - containerPort: 30005  # StarRocks BE NodePort
         hostPort: 30005
+      - containerPort: 30006  # StarRocks CN NodePort
+        hostPort: 30006
+      - containerPort: 30007  # StarRocks FE Proxy NodePort
+        hostPort: 30007

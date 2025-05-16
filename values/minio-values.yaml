@@ -15,8 +15,12 @@ service:
   type: NodePort
   nodePort: 30000
 
+# Kind + Docker: use local-path provisioner for persistent storage
 persistence:
-  enabled: false  # Good for local dev. Enable + set PVC config for production
+  enabled: true
+  storageClass: local-path
+  accessMode: ReadWriteOnce
+  size: 10Gi
 
 console:
   enabled: true

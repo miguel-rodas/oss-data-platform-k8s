@@ -41,9 +41,16 @@ redis:
   enabled: true
 
 postgresql:
-  enabled: true
-  auth:
-    postgresPassword: postgres
+  enabled: false
+
+data:
+  metadataConnection:
+    user: postgres
+    pass: postgrespw
+    protocol: postgresql
+    host: postgres-postgresql.data.svc.cluster.local
+    port: 5432
+    db: airflow_db
 
 dags:
   gitSync:
@@ -61,4 +68,4 @@ apiServer:
     ports:
       - name: api-server
         port: 8080
-        nodePort: 30004
+        nodePort: 30003
