@@ -333,7 +333,7 @@ starrocks:
     # the service type refer https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     service:
       # the fe service type, only supported ClusterIP, NodePort, LoadBalancer
-      type: "NodePort"
+      type: "LoadBalancer"
       # the loadBalancerIP for static ip config when the type=LoadBalancer and loadbalancerIp is not empty.
       loadbalancerIP: ""
       # add annotations for external fe service.
@@ -341,15 +341,10 @@ starrocks:
       # Add labels for external fe service. The operator may add its own default labels.
       labels: {}
       # config the service port for fe service.
-      # To assign a specific port or nodePort to a service, you should specify them by the corresponding name or
-      # containerPort in the service configuration. If both containerPort and name are specified, containerPort takes precedence.
-      # For fe, port name can be http, query, rpc, edit-log, and their default container port is 8030, 9030, 9020, 9010.
       ports:
-        - nodePort: 30004
-          containerPort: 8030
-        # e.g. specify a dedicated node port for fe service by containerPort.
-        # - nodePort: 30030 # The range of valid ports is 30000-32767
-        #   containerPort: 8030 # The port exported on the container
+        - port: 9030
+          targetPort: 9030
+          name: mysql
       # specify the source IP ranges for the load balancer when the type=LoadBalancer.
       loadBalancerSourceRanges: []
         # - 10.0.0.0/8
@@ -1024,17 +1019,11 @@ starrocks:
     #       If you use map to define environment variables, the values in the values files will be merged.
     #       You can only use one of slice and map to define environment variables.
     # In order to avoid different type of beEnvVars, we do not define the default value of beEnvVars, e.g. beEnvVars: [] or beEnvVars: {}.
-    # beEnvVars:
-      # define environment variables by slice.
-      # e.g. static environment variable:
-      # - name: DEMO_GREETING
-      #   value: "Hello from the environment"
-      # e.g. secret environment variable:
-      # - name: USERNAME
-      #   valueFrom:
-      #     secretKeyRef:
-      #       name: mysecret
-      #       key: username
+    beEnvVars:
+      - name: FE_SERVICE_NAME
+        value: "kube-starrocks-fe-service.starrocks.svc.cluster.local"
+      - name: FE_QUERY_PORT
+        value: "9030"
     # affinity for fe pod scheduling.
     affinity: {}
       # nodeAffinity:

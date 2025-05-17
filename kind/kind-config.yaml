@@ -1,5 +1,7 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  apiServerPort: 6443
 nodes:
   - role: control-plane
     extraPortMappings:
@@ -11,11 +13,13 @@ nodes:
         hostPort: 30002
       - containerPort: 30003  # Airflow Web UI 
         hostPort: 30003
-      - containerPort: 30004  # StarRocks FE NodePort
+      - containerPort: 30004  # StarRocks FE Web UI (8030)
         hostPort: 30004
-      - containerPort: 30005  # StarRocks BE NodePort
+      - containerPort: 30005  # StarRocks BE Web UI (8040)
         hostPort: 30005
-      - containerPort: 30006  # StarRocks CN NodePort
+      - containerPort: 30006  # StarRocks CN Web UI (8060)
         hostPort: 30006
-      - containerPort: 30007  # StarRocks FE Proxy NodePort
+      - containerPort: 30007  # StarRocks FE Proxy (9010)
         hostPort: 30007
+      - containerPort: 30008  # StarRocks FE HTTP API / REST interface (9010)
+        hostPort: 30008
