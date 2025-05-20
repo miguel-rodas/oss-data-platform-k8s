@@ -333,7 +333,7 @@ starrocks:
     # the service type refer https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     service:
       # the fe service type, only supported ClusterIP, NodePort, LoadBalancer
-      type: "LoadBalancer"
+      type: "ClusterIP"
       # the loadBalancerIP for static ip config when the type=LoadBalancer and loadbalancerIp is not empty.
       loadbalancerIP: ""
       # add annotations for external fe service.

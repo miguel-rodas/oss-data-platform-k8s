@@ -44,20 +44,6 @@ helm repo add trinodb https://trinodb.github.io/charts
 helm repo add starrocks https://starrocks.github.io/starrocks-kubernetes-operator
 helm repo update
 
-# MetalLB installation for LoadBalancer support
-echo "📦 Installing MetalLB (LoadBalancer)..."
-if ! kubectl get ns metallb-system &> /dev/null; then
-  kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.12/config/manifests/metallb-native.yaml
-  echo "⏳ Waiting for MetalLB pods to be ready..."
-  kubectl wait --namespace metallb-system --for=condition=Ready pod --all --timeout=90s
-  echo "✅ MetalLB installed."
-
-  echo "⚙️  Configuring MetalLB IP pool..."
-  kubectl apply -f ./kind/metallb-config.yaml
-else
-  echo "✅ MetalLB already installed."
-fi
-
 echo "🐘 Deploying shared PostgreSQL instance..."
 # Create 'data' namespace and define init ConfigMap to pre-create airbyte_db and airflow_db
 kubectl create namespace data --dry-run=client -o yaml | kubectl apply -f -
@@ -96,6 +82,9 @@ if helm status minio -n minio &> /dev/null; then
   kubectl delete pvc -n minio --all
 fi
 helm install minio minio/minio -n minio --create-namespace -f values/minio-values.yaml
+
+echo "⏳ Waiting for MinIO PVC to be bound..."
+kubectl wait --for=condition=Bound pvc/minio -n minio --timeout=60s || echo "⚠️ MinIO PVC not yet bound."
 
 echo "✅ MinIO installed."
 
@@ -231,22 +220,4 @@ kubectl patch svc kube-starrocks-be-service -n starrocks \
     }
   }'
 
-# Patch StarRocks FE LoadBalancer service to expose MySQL port 9030
-echo "🔧 Patching StarRocks FE LoadBalancer service for MySQL access..."
-kubectl patch svc kube-starrocks-fe-service -n starrocks \
-  --type merge \
-  -p '{
-    "spec": {
-      "type": "LoadBalancer",
-      "ports": [
-        {
-          "name": "mysql",
-          "port": 9030,
-          "targetPort": 9030,
-          "protocol": "TCP"
-        }
-      ]
-    }
-  }'
-
-echo "✅ StarRocks FE LoadBalancer patched to expose MySQL-compatible port 9030."
+echo "🎉 All services deployed successfully. Your open data platform is ready!"
