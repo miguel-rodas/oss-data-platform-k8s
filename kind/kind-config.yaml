@@ -23,3 +23,5 @@ nodes:
         hostPort: 30007
       - containerPort: 30008  # StarRocks FE HTTP API / REST interface (9010)
         hostPort: 30008
+      - containerPort: 30009 # Nessie Web UI
+        hostPort: 30009

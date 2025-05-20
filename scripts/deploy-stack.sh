@@ -13,23 +13,31 @@ set -e
 # Ensure local-path provisioner is installed
 echo "📦 Ensuring local-path provisioner is installed..."
 
-if ! kubectl get storageclass | grep -q local-path; then
+if ! kubectl get storageclass local-path &> /dev/null; then
+  echo "📦 Applying local-path-provisioner..."
   kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-  kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
   echo "⏳ Waiting for local-path-provisioner to be ready..."
   kubectl rollout status deployment/local-path-provisioner -n local-path-storage --timeout=60s
+else
+  echo "✅ local-path provisioner already installed."
+fi
 
-  echo "🔍 Verifying and enforcing local-path as the only default StorageClass..."
-  DEFAULT_SC=$(kubectl get storageclass | grep '(default)' | awk '{print $1}')
-  if [ "$DEFAULT_SC" != "local-path" ]; then
-    echo "❌ Multiple or incorrect default storage classes found. Cleaning up..."
-    kubectl patch storageclass "$DEFAULT_SC" -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+echo "🔍 Verifying and enforcing local-path as the only default StorageClass..."
+if kubectl get storageclass local-path &> /dev/null; then
+  CURRENT_DEFAULT=$(kubectl get storageclass | awk '/\(default\)/ {print $1}')
+  if [ -n "$CURRENT_DEFAULT" ] && [ "$CURRENT_DEFAULT" != "local-path" ]; then
+    echo "❌ '$CURRENT_DEFAULT' is currently default. Switching to local-path..."
+    kubectl patch storageclass "$CURRENT_DEFAULT" -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+  elif [ -z "$CURRENT_DEFAULT" ]; then
+    echo "❌ No default StorageClass set. Setting local-path as default..."
     kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
   else
     echo "✅ local-path is already the default StorageClass."
   fi
 else
-  echo "✅ local-path provisioner already installed."
+  echo "❌ 'local-path' StorageClass not found. Ensure the provisioner was installed correctly."
+  exit 1
 fi
 
 # Add Helm repositories for external charts
@@ -42,10 +50,11 @@ helm repo add airbyte https://airbytehq.github.io/helm-charts
 helm repo add apache-airflow https://airflow.apache.org
 helm repo add trinodb https://trinodb.github.io/charts
 helm repo add starrocks https://starrocks.github.io/starrocks-kubernetes-operator
+helm repo add nessie-helm https://charts.projectnessie.org
 helm repo update
 
 echo "🐘 Deploying shared PostgreSQL instance..."
-# Create 'data' namespace and define init ConfigMap to pre-create airbyte_db and airflow_db
+# Create 'data' namespace and define init ConfigMap to pre-create airbyte_db, airflow_db and nessie_db
 kubectl create namespace data --dry-run=client -o yaml | kubectl apply -f -
 
 # Ensure a clean installation of PostgreSQL
@@ -58,7 +67,7 @@ fi
 
 kubectl create configmap pg-init-scripts \
   --namespace data \
-  --from-literal=init.sql="CREATE DATABASE airbyte_db; CREATE DATABASE airflow_db;" \
+  --from-literal=init.sql="CREATE DATABASE airbyte_db; CREATE DATABASE airflow_db; CREATE DATABASE nessie_db;" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Ensure the pg-init-scripts ConfigMap is available before proceeding with PostgreSQL installation
@@ -72,7 +81,7 @@ helm upgrade --install postgres bitnami/postgresql \
   --set primary.initdb.password=postgrespw \
   --set primary.initdb.scriptsConfigMap=pg-init-scripts
 
-echo "✅ PostgreSQL deployed with airbyte_db and airflow_db."
+echo "✅ PostgreSQL deployed with airbyte_db, airflow_db, and nessie_db databases."
 
 echo "🚀 Installing MinIO..."
 # Ensure a clean installation of MinIO
@@ -87,6 +96,22 @@ echo "⏳ Waiting for MinIO PVC to be bound..."
 kubectl wait --for=condition=Bound pvc/minio -n minio --timeout=60s || echo "⚠️ MinIO PVC not yet bound."
 
 echo "✅ MinIO installed."
+
+# Install Nessie prerequisites
+echo "🚀 Installing Nessie..."
+echo "🔐 Creating secret for PostgreSQL credentials required by Nessie..."
+kubectl create secret generic postgres-creds \
+  --from-literal=postgres=postgres \
+  --from-literal=postgrespw=postgrespw \
+  -n nessie-ns --dry-run=client -o yaml | kubectl apply -f -
+# Ensure a clean installation of Nessie
+if helm status nessie -n nessie-ns &> /dev/null; then
+  echo "🧼 Deleting existing Nessie release to avoid upgrade conflict..."
+  helm uninstall nessie -n nessie-ns
+  kubectl delete pvc -n nessie-ns --all
+fi
+helm install nessie nessie-helm/nessie --namespace nessie-ns --create-namespace -f values/nessie-values.yaml
+echo "✅ Nessie installed."
 
 echo "🚀 Installing Airbyte..."
 # Ensure a clean installation of Airbyte
@@ -122,6 +147,25 @@ echo "✅ StarRocks installed."
 
 echo "⏳ Waiting for the services to be ready..."
 sleep 90
+
+# Expose Nessie service via NodePort
+echo "🔧 Patching Nessie service to NodePort..."
+kubectl patch svc nessie -n nessie-ns \
+  --type merge \
+  -p '{
+    "spec": {
+      "type": "NodePort",
+      "ports": [
+        {
+          "port": 19120,
+          "targetPort": 19120,
+          "protocol": "TCP",
+          "nodePort": 30009
+        }
+      ]
+    }
+  }'
+echo "✅ Nessie NodePort exposed: 19120 -> 30009."
 
 # Expose Airbyte webapp via NodePort
 echo "🔧 Patching Airbyte webapp service to NodePort..."
@@ -194,6 +238,12 @@ kubectl patch svc kube-starrocks-fe-service -n starrocks \
           "targetPort": 9010,
           "protocol": "TCP",
           "nodePort": 30008
+        },
+        {
+          "name": "mysql",
+          "port": 9030,
+          "targetPort": 9030,
+          "protocol": "TCP"
         }
       ]
     }
@@ -219,5 +269,11 @@ kubectl patch svc kube-starrocks-be-service -n starrocks \
       ]
     }
   }'
+
+# Expose StarRocks FE service via Port-Forward
+echo "🔧 Port-forwarding StarRocks FE MySQL-compatible port (9030)..."
+nohup kubectl -n starrocks port-forward service/kube-starrocks-fe-service 9030:9030 > starrocks-port-forward.log 2>&1 &
+
+echo "✅ You can now connect to StarRocks using: mysql -h 127.0.0.1 -P 9030 -u root"
 
 echo "🎉 All services deployed successfully. Your open data platform is ready!"
