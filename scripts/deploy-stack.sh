@@ -104,6 +104,11 @@ kubectl create secret generic postgres-creds \
   --from-literal=postgres=postgres \
   --from-literal=postgrespw=postgrespw \
   -n nessie-ns --dry-run=client -o yaml | kubectl apply -f -
+echo "🔐 Creating secret for MinIO credentials required by Nessie..."
+kubectl create secret generic minio-creds \
+  --from-literal=minioadmin=minioadmin \
+  --from-literal=minioadmin123=minioadmin123 \
+  -n nessie-ns --dry-run=client -o yaml | kubectl apply -f -
 # Ensure a clean installation of Nessie
 if helm status nessie -n nessie-ns &> /dev/null; then
   echo "🧼 Deleting existing Nessie release to avoid upgrade conflict..."

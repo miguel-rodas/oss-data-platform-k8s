@@ -1,9 +1,8 @@
 CREATE EXTERNAL CATALOG iceberg_catalog_bronze
-PROPERTIES
-(
+PROPERTIES (
   "type" = "iceberg",
   "iceberg.catalog.type" = "rest",
-  "iceberg.catalog.uri" = "http://nessie.nessie-ns.svc.cluster.local:30009/iceberg/bronze",
+  "iceberg.catalog.uri" = "http://nessie.nessie-ns.svc.cluster.local:19120/iceberg",
   "iceberg.catalog.warehouse" = "s3a://warehouse",
   "aws.s3.access_key" = "minioadmin",
   "aws.s3.secret_key" = "minioadmin123",
