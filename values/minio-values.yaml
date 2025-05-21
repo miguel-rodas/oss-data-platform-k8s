@@ -1,5 +1,8 @@
 mode: standalone  # OK for local, use distributed mode in HA environments
 
+buckets:
+  - name: warehouse
+
 rootUser: minioadmin
 rootPassword: minioadmin123
 

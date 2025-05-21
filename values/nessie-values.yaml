@@ -118,7 +118,7 @@ log:
 # Note: the version store type CASSANDRA is deprecated, please use the Nessie Server Admin Tool to migrate to CASSANDRA2.
 # Note: the version store type DYNAMODB is deprecated, please use the Nessie Server Admin Tool to migrate to DYNAMODB2.
 # Note: the version store type MONGODB is deprecated, please use the Nessie Server Admin Tool to migrate to MONGODB2.
-versionStoreType: JDBC
+versionStoreType: JDBC2
 
 # Cassandra settings. Only required when using CASSANDRA version store type; ignored otherwise.
 cassandra:
@@ -217,14 +217,14 @@ bigtable:
 catalog:
 
   # -- Whether to enable the REST catalog service.
-  enabled: false
+  enabled: true
 
   # -- Iceberg catalog settings.
   iceberg:
 
     # -- The default warehouse name. Required. This is just a symbolic name; it must refer to a
     # declared warehouse below.
-    defaultWarehouse: ~  # warehouse1
+    defaultWarehouse: warehouse
 
     # -- Iceberg config defaults applicable to all clients and warehouses. Any properties that are
     # common to all iceberg clients should be included here. They will be passed to all clients on
@@ -244,18 +244,10 @@ catalog:
     # warehouse has a name, a location, and optional config defaults and overrides. At least one
     # warehouse must be defined.
     warehouses:
-      # -- Symbolic name of the warehouse. Required.
-    - name: ~  # warehouse1
-      # -- Location of the warehouse. Required. Used to determine the base location of a table.
-      # Scheme must be either s3 (Amazon S3), gs (Google GCS) or abfs / abfss (Azure ADLS). Storage
-      # properties for each location can be defined below.
-      location: ~  # s3://bucket1/
-      # -- Iceberg config defaults specific to this warehouse. They override any defaults specified
-      # above in catalog.iceberg.configDefaults.
-      configDefaults: {}
-      # -- Iceberg config overrides specific to this warehouse. They override any defaults specified
-      # above in catalog.iceberg.configOverrides.
-      configOverrides: {}
+      - name: warehouse
+        location: s3://warehouse/
+        configDefaults: {}
+        configOverrides: {}
     # In rare cases it might be legit to turn off the object-stores readiness check.
     objectStoresHealthCheckEnabled: true
 
@@ -269,110 +261,14 @@ catalog:
 
       # Global S3 settings. Can be overridden on a per-bucket basis below.
       defaultOptions:
-        # -- DNS name of the region, required for AWS.
-        region: ~  # us-west-2
-        # -- Endpoint URI, required for private clouds. Optional; if not provided, the default is
-        # used.
-        endpoint: ~  # "https://bucket1.s3.amazonaws.com"
-        # -- Endpoint URI, required for private clouds. Optional; if not provided, the default is
-        # used. If the endpoint URIs for the Nessie server and clients differ, this one defines the
-        # endpoint used for the Nessie server.
-        externalEndpoint: ~
-        # -- Whether to use path-style access. Optional; if not provided, the default is used. If
-        # true, path-style access will be used, as in: https://<domain>/<bucket>. If false, a
-        # virtual-hosted style will be used instead, as in: https://<bucket>.<domain>.
-        pathStyleAccess: ~
-        # -- AWS Access point for this bucket. Access points can be used to perform S3 operations by
-        # specifying a mapping of bucket to access points. This is useful for multi-region access,
-        # cross-region access, disaster recovery, etc. See
-        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html.
-        accessPoint: ~
-        # -- Authorize cross-region calls when contacting an access point. The default is false.
-        allowCrossRegionAccessPoint: ~
-        # -- Controls the authentication mode for the Catalog server. Valid values are:
-        # - APPLICATION_GLOBAL: Use the default AWS credentials provider chain.
-        # - STATIC: Static credentials provided through the accessKeySecret option.
-        # The default is STATIC.
-        authType: ~  # STATIC
-        # --Optional parameter to disable S3 request signing. Default is to enable S3 request signing.
-        requestSigningEnabled: ~  # true
-        # -- The STS endpoint. Optional; if not provided, the default is used. This parameter must
-        # be set if the cloud provider is not AMAZON and the catalog is configured to use S3
-        # sessions (e.g. to use the "assume role" functionality).
-        stsEndpoint: ~  # "https://sts.amazonaws.com"
-
-        clientIam:
-          # -- Whether to enable vended credentials functionality. If this option is enabled, the
-          # server will temporarily assume the configured role, then pass the returned session
-          # credentials down to the client, for each table that is created, updated or registered.
-          # Vended credentials are not cached server-side.
-          enabled: ~  # false
-          # -- The ARN of the role to assume for accessing S3 data. This parameter is required for
-          # Amazon S3, but may not be required for other storage providers (e.g. Minio does not use it
-          # at all).
-          roleArn: ~  # "arn:aws:iam::123456789012:role/role-name"
-          # -- The IAM policy in JSON format to be used as an inline session policy when calling the
-          # assume-role endpoint. Optional.
-          policy: ~  # "{ \"Version\": \"2012-10-17\", \"Statement\": [ { \"Effect\": \"Allow\", \"Action\": \"s3:*\", \"Resource\": \"*\" } ] }"
-          # -- An identifier for the assumed role session. This parameter is most important in cases
-          # when the same role is assumed by different principals in different use cases.
-          roleSessionName: ~  # nessie
-          # -- An identifier for the party assuming the role. This parameter must match the external
-          # ID configured in IAM rules that govern the assume role process for the specified roleArn.
-          externalId: ~
-          # -- A higher bound estimate of the expected duration of client "sessions" working with data in
-          # this bucket. A session, for example, is the lifetime of an Iceberg REST catalog object on
-          # the client side. This value is used for validating expiration times of credentials
-          # associated with the warehouse. If unset, a default of one hour is assumed.
-          sessionDuration: ~
-          # -- Additional IAM policy statements in JSON format to add to generated per-table IAM policies.
-          statements: ~
-          # - >-
-          #   {
-          #   "Effect": "Allow",
-          #   "Action": "s3:GetObject",
-          #   "Resource": "arn:aws:s3:::bucket1.{{ .Release.Namespace }}/*"
-          #   }
-          # - >-
-          #   {
-          #     "Effect": "Allow",
-          #     "Action": "s3:PutObject",
-          #     "Resource": "arn:aws:s3:::bucket1.{{ .Release.Namespace }}/*"
-          #   }
-
-        # -- Settings only relevant when clientAuthenticationMode is ASSUME_ROLE.
-        serverIam:
-          # -- Whether to enable server assume-role functionality. If this option is enabled, the
-          # server will attempt to assume the configured role at startup and cache the returned
-          # session credentials.
-          enabled: ~  # false
-          # -- The ARN of the role to assume for accessing S3 data. This parameter is required for
-          # Amazon S3, but may not be required for other storage providers (e.g. Minio does not use it
-          # at all).
-          roleArn: ~  # "arn:aws:iam::123456789012:role/role-name"
-          # -- The IAM policy in JSON format to be used as an inline session policy when calling the
-          # assume-role endpoint. Optional.
-          policy: ~  # "{ \"Version\": \"2012-10-17\", \"Statement\": [ { \"Effect\": \"Allow\", \"Action\": \"s3:*\", \"Resource\": \"*\" } ] }"
-          # -- An identifier for the assumed role session. This parameter is most important in cases
-          # when the same role is assumed by different principals in different use cases.
-          roleSessionName: ~  # nessie
-          # -- An identifier for the party assuming the role. This parameter must match the external
-          # ID configured in IAM rules that govern the assume role process for the specified roleArn.
-          externalId: ~
-          # -- A higher bound estimate of the expected duration of client "sessions" working with data in
-          # this bucket. A session, for example, is the lifetime of an Iceberg REST catalog object on
-          # the client side. This value is used for validating expiration times of credentials
-          # associated with the warehouse. If unset, a default of one hour is assumed.
-          sessionDuration: ~
-
-        # -- AWS credentials. Required when serverAuthenticationMode is STATIC.
+        region: us-east-2
+        endpoint: http://minio.minio.svc.cluster.local:9000
+        pathStyleAccess: true
+        authType: STATIC
         accessKeySecret:
-          # -- The secret name to pull AWS credentials from.
-          name: ~
-          # -- The secret key storing the AWS secret key id.
-          awsAccessKeyId: ~
-          # -- The secret key storing the AWS secret access key.
-          awsSecretAccessKey: ~
+          name: minio-creds
+          awsAccessKeyId: awsAccessKeyId
+          awsSecretAccessKey: awsSecretAccessKey
 
       # -- Per-bucket S3 settings. Override the general settings above.
       buckets: []
@@ -764,15 +660,41 @@ service:
   # -- The type of service to create.
   type: NodePort
   # -- The ports the service will listen on.
+  # At least one port is required; the first port implicitly becomes the HTTP port that the
+  # application will use for serving API requests. By default, it's 19120.
+  # Note: port names must be unique and no more than 15 characters long.
   ports:
     - name: nessie-http
       number: 19120
-      nodePort: 30009
+      nodePort: 30004
+    # - name: nessie-https
+    #  number: 19121
+  # -- The session affinity for the service. Valid values are: None, ClientIP.
+  # ClientIP enables sticky sessions based on the client's IP address.
+  # This is generally beneficial to Nessie deployments, but some testing may be
+  # required in order to make sure that the load is distributed evenly among the pods.
+  # Also, this setting affects only internal clients, not external ones.
+  # If Ingress is enabled, it is recommended to set sessionAffinity to None.
   sessionAffinity: None
+  # -- You can specify your own cluster IP address
+  # If you define a Service that has the .spec.clusterIP set to "None" then Kubernetes does not assign an IP address.
+  # Instead, DNS records for the service will return the IP addresses of each pod targeted by the server. This is
+  # called a headless service.
+  # See https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
   clusterIP: ""
+  # -- The traffic policy fields control how traffic from internal and external sources are routed respectively.
+  # Valid values are Cluster and Local.
+  # Set the field to Cluster to route traffic to all ready endpoints.
+  # Set the field to Local to only route to ready node-local endpoints.
+  # If the traffic policy is Local and there are no node-local endpoints, traffic is dropped by kube-proxy
   internalTrafficPolicy: Cluster
   externalTrafficPolicy: Cluster
+  # -- The traffic distribution field provides another way to influence traffic routing within a Kubernetes Service.
+  # While traffic policies focus on strict semantic guarantees, traffic distribution allows you to express preferences
+  # such as routing to topologically closer endpoints.
+  # Valid values are: PreferClose
   trafficDistribution: PreferClose
+  # -- Annotations to add to the service.
   annotations: {}
 
 # -- Management service settings. These settings are used to configure liveness and readiness probes,
