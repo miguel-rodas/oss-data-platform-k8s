@@ -10,18 +10,18 @@ service:
 resources:
   server:
     requests:
-      cpu: "200m"
-      memory: "512Mi"
-    limits:
       cpu: "500m"
       memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "1.5Gi"
   worker:
     requests:
-      cpu: "200m"
-      memory: "512Mi"
-    limits:
       cpu: "500m"
       memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "1.5Gi"
 
 # Configure Airbyte to store logs in MinIO
 logs:

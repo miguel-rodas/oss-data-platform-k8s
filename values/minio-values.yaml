@@ -3,6 +3,7 @@ mode: standalone  # OK for local, use distributed mode in HA environments
 buckets:
   - name: warehouse
   - name: airbyte-logs
+  - name: airflow-logs
 
 rootUser: minioadmin
 rootPassword: minioadmin123
