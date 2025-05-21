@@ -2,6 +2,7 @@ mode: standalone  # OK for local, use distributed mode in HA environments
 
 buckets:
   - name: warehouse
+  - name: airbyte-logs
 
 rootUser: minioadmin
 rootPassword: minioadmin123
@@ -23,7 +24,7 @@ persistence:
   enabled: true
   storageClass: local-path
   accessMode: ReadWriteOnce
-  size: 10Gi
+  size: 5Gi
 
 console:
   enabled: true
@@ -36,3 +37,4 @@ console:
 environment:
   MINIO_BROWSER_REDIRECT_URL: http://localhost:30001
   MINIO_DOMAIN: ""  # Force path-style (http://host:port/bucket) for compatibility
+  MINIO_REGION_NAME: us-east-2

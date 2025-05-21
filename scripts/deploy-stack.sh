@@ -3,7 +3,7 @@
 # Create Kind cluster if it doesn't exist
 if ! kind get clusters | grep -q '^kind$'; then
   echo "🛠️ Creating Kind cluster..."
-  kind create cluster --config kind/kind-config.yaml
+  kind create cluster --config kind/kind-config.yaml --name data-stack
 else
   echo "✅ Kind cluster already exists."
 fi
@@ -77,7 +77,14 @@ helm upgrade --install postgres bitnami/postgresql \
   --set auth.database=postgres \
   --set primary.initdb.user=postgres \
   --set primary.initdb.password=postgrespw \
-  --set primary.initdb.scriptsConfigMap=pg-init-scripts
+  --set primary.initdb.scriptsConfigMap=pg-init-scripts \
+  --set primary.resources.requests.memory=512Mi \
+  --set primary.resources.requests.cpu=250m \
+  --set primary.resources.limits.memory=1Gi \
+  --set primary.resources.limits.cpu=500m \
+  --set primary.persistence.enabled=true \
+  --set primary.persistence.storageClass=local-path \
+  --set primary.persistence.size=5Gi
 
 echo "✅ PostgreSQL deployed with airbyte_db, airflow_db, and nessie_db databases."
 
