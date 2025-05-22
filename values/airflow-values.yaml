@@ -1,9 +1,15 @@
 executor: "CeleryExecutor"
 
-airflowVersion: "3.0.0"
+airflowVersion: "3.0.1"
 defaultAirflowRepository: apache/airflow
-defaultAirflowTag: "3.0.0"
+defaultAirflowTag: "3.0.1"
 
+airflow:
+  extraPipPackages:
+    - "apache-airflow[airbyte,apache-iceberg,dbt-cloud,apache-flink,apache-kafka,trino]==3.0.1"
+    - "--constraint"
+    - "https://raw.githubusercontent.com/apache/airflow/constraints-3.0.1/constraints-3.9.txt"
+    
 fernetKey: "cHJhV1M1ZjBXVXEwVVVrdXpJeUw1cnVBMjhvdlhYaDU="
 webserverSecretKey: "acFiyoZwRn40Gilh3kwkjGiJB4qHbBLtIZQ8tcJP9uPfEV5VSVWZi3SMT-SNkXBDKCIQoRKplClAMgH2Q0xwRg"
 

@@ -59,3 +59,8 @@ externalDatabase:
   database: airbyte_db
   username: postgres
   password: postgrespw
+
+basicAuth:
+  enabled: true
+  username: admin
+  password: password
