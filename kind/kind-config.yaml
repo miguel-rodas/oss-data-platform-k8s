@@ -17,3 +17,5 @@ nodes:
         hostPort: 30004
       - containerPort: 30005 # Trino Web UI
         hostPort: 30005
+      - containerPort: 30006 # Airbyte Webhook
+        hostPort: 30006

@@ -6,6 +6,12 @@ service:
   port: 8080
   nodePort: 30002  # Airbyte UI will be at http://localhost:30002
 
+server:
+  service:
+    type: NodePort
+    port: 8001
+    nodePort: 30006
+
 # Reduce resources for local Kind cluster
 resources:
   server:
