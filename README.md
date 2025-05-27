@@ -2,4 +2,4 @@
 
 ## 🚀 Creating the Local Kubernetes Cluster
 ```bash
-./scripts/create-kind-cluster.sh
+./scripts/deploy-stack.sh
